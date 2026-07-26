@@ -1,0 +1,16 @@
+{
+  // Konfigurasi Cloudflare Workers "Static Assets" untuk menyajikan hasil build
+  // Vite (folder ./dist) sebagai situs statik. Tidak ada script Worker (tidak ada
+  // "main") — murni static hosting. Dipakai oleh `npx wrangler deploy` di flow
+  // Workers Builds yang baru (pengganti Pages).
+  "name": "personal-finance-tracker-frontend",
+  "compatibility_date": "2025-06-01",
+  "assets": {
+    "directory": "./dist",
+    // SPA: path yang tidak cocok file statik disajikan index.html (status 200),
+    // supaya React Router menangani rute di sisi klien. Ini pengganti _redirects
+    // untuk mode Workers Static Assets — deep-link /installments, /members dll
+    // tidak lagi 404.
+    "not_found_handling": "single-page-application"
+  }
+}
