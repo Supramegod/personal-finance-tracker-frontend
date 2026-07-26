@@ -1,0 +1,48 @@
+@import "tailwindcss";
+
+/* Rose Elegant Theme — Light Mode Only */
+@theme {
+  --color-primary: #BE185D;
+  --color-primary-light: #FFF1F2;
+  --color-accent: #F43F5E;
+  --color-text: #1F2937;
+  --color-income: #16A34A;
+  --color-income-light: #DCFCE7;
+  --color-income-dark: #15803D;
+  --color-expense: #DC2626;
+  --color-expense-light: #FEE2E2;
+  --color-expense-dark: #B91C1C;
+  --color-brand-50: #FFF1F2;
+  --color-brand-100: #FFE4E6;
+  --color-brand-200: #FECDD3;
+  --color-brand-300: #FDA4AF;
+  --color-brand-400: #FB7185;
+  --color-brand-500: #F43F5E;
+  --color-brand-600: #E11D48;
+  --color-brand-700: #BE185D;
+  --color-brand-800: #9D174D;
+  --color-brand-900: #831843;
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+body {
+  font-family: var(--font-sans);
+  color: var(--color-text);
+  background-color: white;
+  margin: 0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Skeleton shimmer animation */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.skeleton {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 4px;
+}

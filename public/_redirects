@@ -1,0 +1,6 @@
+# SPA fallback untuk Cloudflare Pages.
+# React Router pakai client-side routing. Tanpa baris ini, buka/refresh URL
+# dalam seperti /installments atau /members langsung mengembalikan 404 dari
+# server statis. Aturan ini menyajikan index.html untuk semua path (status 200)
+# agar router menangani rutenya di sisi klien.
+/*    /index.html   200
