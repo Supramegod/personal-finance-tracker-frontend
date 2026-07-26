@@ -53,6 +53,32 @@ export default function DashboardPage() {
     .sort((a, b) => a.dueDate - b.dueDate)
     .slice(0, 4)
 
+  // Total cicilan per bulan mendatang. Untuk tiap cicilan aktif, sisa periode
+  // (paid_count..tenor-1) jatuh tempo di start_date + periode bulan, masing-
+  // masing sebesar monthly_amount. Dijumlahkan per bulan, hanya bulan >= bulan
+  // ini (yang akan datang), diambil 6 bulan terdekat.
+  const startOfThisMonth = (() => {
+    const d = new Date()
+    return new Date(d.getFullYear(), d.getMonth(), 1)
+  })()
+  const monthlyDueMap = new Map() // 'YYYY-MM' -> { date, total }
+  activeInstallments.forEach((i) => {
+    if (!i.start_date) return
+    const remaining = Math.max(i.tenor_months - i.paid_count, 0)
+    for (let k = 0; k < remaining; k++) {
+      const due = addMonths(new Date(i.start_date), i.paid_count + k)
+      const monthStart = new Date(due.getFullYear(), due.getMonth(), 1)
+      if (monthStart < startOfThisMonth) continue // lewati yang sudah terlewat
+      const key = `${due.getFullYear()}-${String(due.getMonth() + 1).padStart(2, '0')}`
+      const entry = monthlyDueMap.get(key)
+      if (entry) entry.total += i.monthly_amount
+      else monthlyDueMap.set(key, { date: monthStart, total: i.monthly_amount })
+    }
+  })
+  const monthlyDues = [...monthlyDueMap.values()]
+    .sort((a, b) => a.date - b.date)
+    .slice(0, 6)
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -137,6 +163,23 @@ export default function DashboardPage() {
               )}
             </div>
           </div>
+
+          {/* Total cicilan per bulan mendatang */}
+          {monthlyDues.length > 0 && (
+            <div className="mt-4 pt-4 border-t border-gray-100">
+              <p className="text-xs text-gray-500 mb-3">Total per bulan mendatang</p>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+                {monthlyDues.map((m) => (
+                  <div key={m.date.getTime()} className="rounded-lg bg-gray-50 p-3">
+                    <p className="text-xs text-gray-500">
+                      {formatDate(m.date, { month: 'short', year: 'numeric' })}
+                    </p>
+                    <p className="text-sm font-bold text-expense mt-1">{formatIDR(m.total)}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
