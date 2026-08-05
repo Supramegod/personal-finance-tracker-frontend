@@ -6,6 +6,7 @@ import balanceReducer from './slices/balanceSlice'
 import calendarReducer from './slices/calendarSlice'
 import installmentReducer from './slices/installmentSlice'
 import groupReducer from './slices/groupSlice'
+import aiInsightReducer from './slices/aiInsightSlice'
 
 export const store = configureStore({
   reducer: {
@@ -16,6 +17,7 @@ export const store = configureStore({
     calendar: calendarReducer,
     installments: installmentReducer,
     groups: groupReducer,
+    aiInsight: aiInsightReducer,
   },
   devTools: import.meta.env.DEV,
 })

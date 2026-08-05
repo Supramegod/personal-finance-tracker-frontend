@@ -8,6 +8,7 @@ import BalanceCard from '@/components/shared/BalanceCard'
 import SummaryCard from '@/components/shared/SummaryCard'
 import IncomeExpenseChart from '@/components/shared/IncomeExpenseChart'
 import CalendarView from '@/components/shared/CalendarView'
+import AIInsightPanel from '@/components/shared/AIInsightPanel'
 import { formatIDR, formatDate, cn } from '@/lib/utils'
 
 // Tambah n bulan ke sebuah tanggal (menangani pergantian tahun otomatis).
@@ -25,8 +26,9 @@ export default function DashboardPage() {
   const { user } = useAppSelector((state) => state.auth)
 
   useEffect(() => {
+    const year = new Date().getFullYear()
     dispatch(fetchBalance())
-    dispatch(fetchReport({ period: 'monthly', from: '2026-01-01', to: '2026-12-31' }))
+    dispatch(fetchReport({ period: 'monthly', from: `${year}-01-01`, to: `${year}-12-31` }))
     dispatch(fetchTransactions({ limit: 5, page: 1 }))
     dispatch(fetchInstallments())
   }, [dispatch])
@@ -107,6 +109,9 @@ export default function DashboardPage() {
           isLoading={balanceStatus === 'loading'}
         />
       </div>
+
+      {/* Overview analisis bulan terakhir yang sudah selesai */}
+      <AIInsightPanel compact />
 
       {/* Calendar + Chart — 2 kolom di desktop */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
