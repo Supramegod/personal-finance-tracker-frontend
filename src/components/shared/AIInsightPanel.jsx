@@ -9,6 +9,12 @@ import {
 } from '@/store/slices/aiInsightSlice'
 import { cn, formatIDR } from '@/lib/utils'
 
+// Batas percobaan polling untuk status 'not_available' (~1 menit pada
+// interval 5 detik). Cukup untuk menangkap insight yang baru saja dibuat
+// setelah consent diaktifkan, tanpa membebani server selamanya bila memang
+// tidak ada data untuk dianalisis.
+const MAX_IDLE_POLLS = 12
+
 const healthStyle = {
   good: { label: 'Baik', badge: 'bg-income-light text-income-dark', icon: 'text-income bg-income-light' },
   watch: { label: 'Perlu dijaga', badge: 'bg-amber-100 text-amber-700', icon: 'text-amber-600 bg-amber-50' },
@@ -35,14 +41,34 @@ export default function AIInsightPanel({ compact = false, month, onMonthChange }
   }, [compact, dispatch, month, state.consent?.enabled])
 
   // Aktivasi memicu proses background. Poll hanya selama hasil belum selesai.
+  //
+  // 'not_available' dibatasi jumlah percobaannya karena status itu BUKAN
+  // kondisi sementara: kelompok yang sudah consent tetapi belum punya baris
+  // insight (kelompok baru, atau tanpa transaksi bulan lalu) akan berada di
+  // sana selamanya. Tanpa batas, panel memanggil endpoint tiap 5 detik terus
+  // menerus, per tab yang terbuka, tanpa akhir.
+  //
+  // 'pending'/'processing' benar-benar sementara — backend sedang bekerja —
+  // jadi keduanya tetap di-poll sampai selesai.
+  const [pollAttempts, setPollAttempts] = useState(0)
+  const status = insight?.status
+  const isTransient = status === 'pending' || status === 'processing'
+  const shouldPoll = state.consent?.enabled
+    && (isTransient || (status === 'not_available' && pollAttempts < MAX_IDLE_POLLS))
+
+  // Reset penghitung setiap kali status berubah, supaya jatah percobaan
+  // berlaku per fase dan bukan seumur hidup komponen.
+  useEffect(() => { setPollAttempts(0) }, [status, month, compact])
+
   useEffect(() => {
-    if (!state.consent?.enabled || !['not_available', 'pending', 'processing'].includes(insight?.status)) return
+    if (!shouldPoll) return
     const timer = window.setInterval(() => {
+      if (!isTransient) setPollAttempts((count) => count + 1)
       if (compact) dispatch(fetchLatestAIInsight())
       else if (month) dispatch(fetchMonthlyAIInsight(month))
     }, 5000)
     return () => window.clearInterval(timer)
-  }, [compact, dispatch, insight?.status, month, state.consent?.enabled])
+  }, [compact, dispatch, isTransient, month, shouldPoll])
 
   const setConsent = async (enabled) => {
     setConfirmMode(null)
@@ -97,7 +123,12 @@ export default function AIInsightPanel({ compact = false, month, onMonthChange }
     ? <PanelSkeleton compact={compact} />
     : insightStatus === 'failed'
       ? <MessagePanel title="Analisis gagal dimuat" message={state.error} onRetry={() => compact ? dispatch(fetchLatestAIInsight()) : dispatch(fetchMonthlyAIInsight(month))} />
-      : insight?.status !== 'completed' || !insight?.analysis
+      // Selama masih ADA analisis tersimpan, tampilkan — meski statusnya
+      // 'processing' (sedang diregenerasi karena transaksi bulan itu diedit)
+      // atau 'failed'. Sebelumnya panel hanya melihat status, sehingga hasil
+      // lama yang masih valid disembunyikan; kalau regenerasi lalu gagal
+      // permanen, analisis bagus itu hilang dari mata pengguna untuk selamanya.
+      : !insight?.analysis
         ? <MessagePanel title={insight?.status === 'failed' ? 'Analisis gagal' : insight?.status === 'processing' ? 'Sedang dianalisis' : 'Belum ada analisis'} message={insight?.status === 'failed' ? 'Backend akan mencoba kembali secara otomatis.' : 'Analisis dibuat setelah bulan berakhir. Halaman ini akan memperbarui hasil otomatis.'} />
         : <InsightContent insight={insight} compact={compact} />
 
@@ -128,6 +159,10 @@ function InsightContent({ insight, compact }) {
               <h2 className="font-semibold text-text">{compact ? 'Insight AI terbaru' : 'Analisis keuangan AI'}</h2>
               <span className={cn('rounded-full px-2.5 py-1 text-xs font-semibold', style.badge)}>{style.label}</span>
               {insight.is_stale && <span className="rounded-full bg-gray-100 px-2 py-1 text-xs text-gray-500">Perlu diperbarui</span>}
+              {/* Analisis di bawah masih hasil lama yang valid; backend sedang
+                  membuat versi baru atau gagal melakukannya. */}
+              {insight.status === 'processing' && <span className="rounded-full bg-blue-50 px-2 py-1 text-xs text-blue-600">Sedang diperbarui</span>}
+              {insight.status === 'failed' && <span className="rounded-full bg-amber-100 px-2 py-1 text-xs text-amber-700">Pembaruan gagal</span>}
             </div>
             <p className="mt-0.5 text-xs text-gray-400">Periode {formatMonth(insight.period)}</p>
           </div>
@@ -202,7 +237,11 @@ function FullInsight({ insight }) {
 
 function Fact({ label, value }) { return <div className="rounded-xl bg-gray-50 p-4"><p className="text-xs text-gray-400">{label}</p><p className="mt-1 font-bold text-text">{value}</p></div> }
 function Priority({ value }) { const styles={high:'bg-expense-light text-expense-dark',medium:'bg-amber-100 text-amber-700',low:'bg-income-light text-income-dark'};return <span className={cn('rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase',styles[value]||styles.medium)}>{value||'medium'}</span> }
-function InsightList({ title, items = [], warning = false }) { if (!items.length) return null;return <div className="mt-6"><h4 className="text-sm font-semibold text-text">{title}</h4><ul className="mt-2 space-y-2">{items.map((item,index)=><li key={`${item}-${index}`} className="flex gap-2 text-sm leading-5 text-gray-600"><span className={warning?'text-amber-500':'text-primary'}>{warning?'⚠':'•'}</span><span>{item}</span></li>)}</ul></div> }
+// Guard WAJIB pakai `?.`, bukan default parameter: nilai default hanya berlaku
+// untuk `undefined`, sedangkan Go men-serialize slice nil menjadi `null`.
+// key_findings/cautions yang null pernah membuat seluruh halaman Reports crash
+// dengan TypeError saat membaca .length.
+function InsightList({ title, items, warning = false }) { if (!items?.length) return null;return <div className="mt-6"><h4 className="text-sm font-semibold text-text">{title}</h4><ul className="mt-2 space-y-2">{items.map((item,index)=><li key={`${item}-${index}`} className="flex gap-2 text-sm leading-5 text-gray-600"><span className={warning?'text-amber-500':'text-primary'}>{warning?'⚠':'•'}</span><span>{item}</span></li>)}</ul></div> }
 
 function MonthPicker({ month, onChange }) {
   const current = parseMonth(month)
