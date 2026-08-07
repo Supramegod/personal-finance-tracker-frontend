@@ -1,0 +1,35 @@
+# ============================================================
+# Frontend — image DEVELOPMENT (Vite dev server + hot reload)
+# ============================================================
+# Khusus untuk stack lokal (docker-compose.yml di root repo induk).
+# JANGAN dipakai untuk produksi: dev server tidak melakukan minifikasi,
+# menyertakan sourcemap penuh, dan mengikat ke 0.0.0.0.
+#
+# Produksi memakai jalur berbeda: `npm run build` lalu deploy hasil dist/
+# ke Cloudflare Pages (lihat .env.production).
+# ============================================================
+
+FROM node:22-alpine
+
+WORKDIR /app
+
+RUN apk add --no-cache tzdata
+ENV TZ=Asia/Jakarta
+
+# Salin manifest dulu supaya layer npm ci ter-cache dan tidak diulang setiap
+# kali file sumber berubah.
+COPY package.json package-lock.json ./
+
+# `npm ci` (bukan `npm install`) agar versi persis mengikuti lockfile.
+RUN npm ci
+
+# Sumber di-bind-mount saat runtime oleh compose. COPY di sini hanya supaya
+# image tetap bisa jalan sendiri tanpa mount (mis. untuk `docker run` cepat).
+COPY . .
+
+EXPOSE 5173
+
+# Konfigurasi khusus container: bind 0.0.0.0, watcher polling, dan proxy
+# /api diarahkan ke service "api" (bukan localhost, yang di dalam container
+# menunjuk ke container ini sendiri).
+CMD ["npx", "vite", "--config", "vite.config.docker.js", "--host", "0.0.0.0", "--port", "5173"]
