@@ -82,10 +82,13 @@ export default function ReportsPage() {
         </section>
       ) : (
         <>
-          <div className="grid gap-4 sm:grid-cols-3">
+          {/* Ditabung dipisah dari pengeluaran: menabung memindahkan uang,
+              bukan membelanjakannya. Berlaku net = masuk - keluar - ditabung. */}
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <MetricCard label="Total pemasukan" value={report.total_income} tone="income" loading={loading} />
             <MetricCard label="Total pengeluaran" value={report.total_expense} tone="expense" loading={loading} />
-            <MetricCard label="Saldo bersih" value={report.net} tone={report.net >= 0 ? 'income' : 'expense'} loading={loading} />
+            <MetricCard label="Ditabung" value={report.total_savings ?? 0} tone="income" loading={loading} />
+            <MetricCard label="Sisa kas" value={report.net} tone={report.net >= 0 ? 'income' : 'expense'} loading={loading} />
           </div>
           <IncomeExpenseChart data={report.periods} isLoading={loading} />
         </>

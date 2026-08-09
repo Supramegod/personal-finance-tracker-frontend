@@ -7,7 +7,11 @@ function apiError(err, fallback) {
 }
 
 /**
- * Fetch saldo terkini. Backend: { balance }.
+ * Fetch saldo terkini.
+ * Backend: { balance, savings_total, net_worth }.
+ *   balance      — saldo kas, SUDAH dikurangi setoran tabungan
+ *   savings_total — total di seluruh pot tabungan
+ *   net_worth    — kas + tabungan
  */
 export const fetchBalance = createAsyncThunk(
   'balance/fetch',
@@ -24,7 +28,10 @@ export const fetchBalance = createAsyncThunk(
 /**
  * Fetch report income vs expense per periode.
  * Backend WAJIB menerima from & to (YYYY-MM-DD); kalau kosong -> 400.
- * Response: { periods, total_income, total_expense, net }.
+ * Response: { periods, total_income, total_expense, total_savings, net }.
+ * Baris transfer (mutasi tabungan) dikeluarkan dari income/expense dan
+ * dijumlahkan terpisah sebagai total_savings, sehingga berlaku
+ * net = total_income - total_expense - total_savings.
  */
 export const fetchReport = createAsyncThunk(
   'balance/fetchReport',
@@ -40,9 +47,12 @@ export const fetchReport = createAsyncThunk(
 
 const initialState = {
   balance: 0,
+  savingsTotal: 0,
+  netWorth: 0,
   report: {
     total_income: 0,
     total_expense: 0,
+    total_savings: 0,
     net: 0,
     periods: [],
   },
@@ -65,6 +75,9 @@ const balanceSlice = createSlice({
       .addCase(fetchBalance.fulfilled, (state, action) => {
         state.status = 'succeeded'
         state.balance = action.payload.balance
+        // Default 0 supaya UI tetap jalan bila backend belum diperbarui.
+        state.savingsTotal = action.payload.savings_total ?? 0
+        state.netWorth = action.payload.net_worth ?? action.payload.balance
       })
       .addCase(fetchBalance.rejected, (state, action) => {
         state.status = 'failed'
