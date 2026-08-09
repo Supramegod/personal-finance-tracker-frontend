@@ -1,6 +1,11 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
 import api from '@/lib/api'
 
+function apiError(err, fallback) {
+  const e = err.response?.data?.error
+  return (typeof e === 'string' ? e : e?.message) || err.message || fallback
+}
+
 /**
  * Fetch all categories. Backend mengembalikan { data: [...] }.
  */
@@ -11,8 +16,7 @@ export const fetchCategories = createAsyncThunk(
       const res = await api.get('/categories', { params })
       return res.data.data
     } catch (err) {
-      const e = err.response?.data?.error
-      return rejectWithValue((typeof e === 'string' ? e : e?.message) || 'Gagal memuat kategori')
+      return rejectWithValue(apiError(err, 'Gagal memuat kategori'))
     }
   }
 )

@@ -89,3 +89,42 @@ export function generateUUID() {
     return v.toString(16)
   })
 }
+
+/**
+ * Ambil digit dari teks yang diketik user dan kembalikan sebagai string angka
+ * polos. Dipakai bersama formatIDRInput untuk input nominal berpemisah ribuan.
+ *
+ * Semua non-digit dibuang — jadi menempel "Rp 1.500.000" dari mana pun tetap
+ * terbaca 1500000. Nol di depan ikut dipangkas supaya "007" tidak lolos ke
+ * backend. String kosong berarti "belum diisi", bukan 0.
+ *
+ * @param {string} text
+ * @returns {string} '' atau deretan digit tanpa nol di depan
+ */
+export function parseIDRInput(text) {
+  // Angka dibulatkan lebih dulu. Kolom amount bertipe DECIMAL(15,2), jadi
+  // String(25000.5) menghasilkan "25000.5" — dan karena titik di format
+  // Indonesia adalah pemisah RIBUAN, pembersihan di bawah akan membacanya
+  // sebagai 250005. Salah sepuluh kali lipat, tanpa peringatan apa pun.
+  const source = typeof text === 'number' ? String(Math.round(text)) : String(text ?? '')
+  const digits = source.replace(/\D/g, '')
+  if (digits === '') return ''
+  const trimmed = digits.replace(/^0+/, '')
+  return trimmed === '' ? '0' : trimmed
+}
+
+/**
+ * Format angka jadi string berpemisah ribuan gaya Indonesia (titik), TANPA
+ * prefix "Rp" — prefix-nya dirender terpisah di dalam field.
+ *
+ * Sengaja tidak memakai formatIDR: yang itu menempelkan "Rp" dan spasi tak
+ * putus, yang akan ikut masuk ke nilai input dan mengacaukan posisi kursor.
+ *
+ * @param {string|number} value
+ * @returns {string}
+ */
+export function formatIDRInput(value) {
+  const digits = parseIDRInput(value)
+  if (digits === '') return ''
+  return new Intl.NumberFormat('id-ID').format(Number(digits))
+}

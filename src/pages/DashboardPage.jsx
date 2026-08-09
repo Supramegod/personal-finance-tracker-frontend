@@ -4,6 +4,7 @@ import { useAppDispatch, useAppSelector } from '@/store/hooks'
 import { fetchBalance, fetchReport } from '@/store/slices/balanceSlice'
 import { fetchTransactions } from '@/store/slices/transactionSlice'
 import { fetchInstallments } from '@/store/slices/installmentSlice'
+import { fetchSavings } from '@/store/slices/savingsSlice'
 import BalanceCard from '@/components/shared/BalanceCard'
 import SummaryCard from '@/components/shared/SummaryCard'
 import IncomeExpenseChart from '@/components/shared/IncomeExpenseChart'
@@ -20,9 +21,10 @@ function addMonths(date, n) {
 
 export default function DashboardPage() {
   const dispatch = useAppDispatch()
-  const { balance, report, status: balanceStatus } = useAppSelector((state) => state.balance)
+  const { balance, savingsTotal, report, status: balanceStatus } = useAppSelector((state) => state.balance)
   const { items: transactions, status: txStatus } = useAppSelector((state) => state.transactions)
   const { items: installments } = useAppSelector((state) => state.installments)
+  const { items: savings } = useAppSelector((state) => state.savings)
   const { user } = useAppSelector((state) => state.auth)
 
   useEffect(() => {
@@ -31,6 +33,7 @@ export default function DashboardPage() {
     dispatch(fetchReport({ period: 'monthly', from: `${year}-01-01`, to: `${year}-12-31` }))
     dispatch(fetchTransactions({ limit: 5, page: 1 }))
     dispatch(fetchInstallments())
+    dispatch(fetchSavings({ status: 'active' }))
   }, [dispatch])
 
   const isLoadingBalance = balanceStatus === 'loading'
@@ -95,7 +98,7 @@ export default function DashboardPage() {
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <BalanceCard balance={balance} isLoading={isLoadingBalance} />
+        <BalanceCard balance={balance} savingsTotal={savingsTotal} isLoading={isLoadingBalance} />
         <SummaryCard
           title="Total Pemasukan"
           amount={report.total_income}
@@ -124,6 +127,51 @@ export default function DashboardPage() {
           isLoading={balanceStatus === 'loading'}
         />
       </div>
+
+      {/* Ringkasan Tabungan */}
+      {savings.length > 0 && (
+        <div className="bg-white rounded-xl border border-gray-200 p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-base font-semibold text-text">Tabungan</h3>
+            <Link
+              to="/savings"
+              className="text-sm font-medium text-primary hover:text-primary/80 transition-colors"
+            >
+              Kelola →
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="rounded-lg bg-income-light/40 p-4">
+              <p className="text-xs text-gray-500">Total terkumpul</p>
+              <p className="text-xl font-bold text-income-dark">{formatIDR(savingsTotal)}</p>
+              <p className="text-xs text-gray-400 mt-1">{savings.length} pot aktif</p>
+            </div>
+
+            <div className="md:col-span-2">
+              <p className="text-xs text-gray-500 mb-2">Progres per pot</p>
+              <div className="space-y-2">
+                {savings.slice(0, 4).map((goal) => {
+                  const percent = goal.target_amount
+                    ? Math.round((goal.progress ?? 0) * 100)
+                    : null
+                  return (
+                    <div key={goal.id} className="flex items-center justify-between gap-3 text-sm">
+                      <span className="min-w-0 truncate font-medium text-text">{goal.name}</span>
+                      <span className="shrink-0 text-gray-500">
+                        {formatIDR(goal.saved_amount)}
+                        {percent !== null && (
+                          <span className="ml-2 text-xs text-gray-400">{percent}%</span>
+                        )}
+                      </span>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Ringkasan Cicilan */}
       {installments.length > 0 && (

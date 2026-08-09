@@ -12,6 +12,8 @@
   --color-expense: #DC2626;
   --color-expense-light: #FEE2E2;
   --color-expense-dark: #B91C1C;
+  --color-warning: #B45309;
+  --color-warning-light: #FFFBEB;
   --color-brand-50: #FFF1F2;
   --color-brand-100: #FFE4E6;
   --color-brand-200: #FECDD3;
@@ -38,6 +40,14 @@ body {
 @keyframes shimmer {
   0% { background-position: -200% 0; }
   100% { background-position: 200% 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton { animation: none; background: #e5e7eb; }
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
 .skeleton {

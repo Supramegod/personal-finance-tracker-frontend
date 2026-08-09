@@ -8,6 +8,7 @@ import LoginPage from '@/pages/LoginPage'
 import DashboardPage from '@/pages/DashboardPage'
 import TransactionPage from '@/pages/TransactionPage'
 import InstallmentPage from '@/pages/InstallmentPage'
+import SavingsPage from '@/pages/SavingsPage'
 import ReportsPage from '@/pages/ReportsPage'
 import MembersPage from '@/pages/MembersPage'
 
@@ -48,6 +49,7 @@ export default function App() {
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/transactions" element={<TransactionPage />} />
           <Route path="/installments" element={<InstallmentPage />} />
+          <Route path="/savings" element={<SavingsPage />} />
           <Route path="/reports" element={<ReportsPage />} />
           <Route path="/members" element={<MembersPage />} />
         </Route>

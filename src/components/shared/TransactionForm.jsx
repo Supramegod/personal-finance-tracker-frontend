@@ -3,6 +3,7 @@ import { useAppDispatch, useAppSelector } from '@/store/hooks'
 import { fetchCategories } from '@/store/slices/categorySlice'
 import { createTransaction, updateTransaction } from '@/store/slices/transactionSlice'
 import { toISODate, cn } from '@/lib/utils'
+import CurrencyInput from '@/components/shared/CurrencyInput'
 
 export default function TransactionForm({ open, onClose, transaction }) {
   const dispatch = useAppDispatch()
@@ -27,7 +28,7 @@ export default function TransactionForm({ open, onClose, transaction }) {
     if (transaction) {
       setFormData({
         type: transaction.type,
-        amount: String(transaction.amount),
+        amount: String(Math.round(transaction.amount)),
         category_id: transaction.category_id,
         // Backend mengirim transaction_date format RFC3339
         // (2026-06-20T00:00:00Z); <input type="date"> butuh YYYY-MM-DD,
@@ -187,16 +188,11 @@ export default function TransactionForm({ open, onClose, transaction }) {
           {/* Amount */}
           <div>
             <label className="block text-sm font-medium text-text mb-1">Jumlah (Rp)</label>
-            <input
-              type="number"
+            <CurrencyInput
               value={formData.amount}
-              onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+              onChange={(digits) => setFormData({ ...formData, amount: digits })}
               placeholder="0"
-              min="0"
-              className={cn(
-                'w-full px-3 py-2.5 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent',
-                errors.amount ? 'border-expense' : 'border-gray-300'
-              )}
+              hasError={Boolean(errors.amount)}
             />
             {errors.amount && <p className="mt-1 text-xs text-expense">{errors.amount}</p>}
           </div>

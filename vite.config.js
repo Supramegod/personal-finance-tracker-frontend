@@ -19,4 +19,20 @@ export default defineConfig({
       },
     },
   },
+  // Konfigurasi Vitest. Sengaja menumpang di vite.config.js (bukan file
+  // vitest.config.js terpisah) supaya alias '@' dan plugin React otomatis
+  // ikut terpakai di tes — kalau dipisah, keduanya harus diduplikasi.
+  test: {
+    environment: 'jsdom',
+    setupFiles: './src/test/setup.js',
+    // globals sengaja false; tiap tes mengimpor describe/it/expect eksplisit.
+    globals: false,
+    css: false,
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'html'],
+      include: ['src/**/*.{js,jsx}'],
+      exclude: ['src/test/**', 'src/main.jsx', 'src/lib/mockData.js'],
+    },
+  },
 })

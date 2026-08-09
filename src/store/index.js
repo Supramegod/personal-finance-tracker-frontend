@@ -5,6 +5,7 @@ import categoryReducer from './slices/categorySlice'
 import balanceReducer from './slices/balanceSlice'
 import calendarReducer from './slices/calendarSlice'
 import installmentReducer from './slices/installmentSlice'
+import savingsReducer from './slices/savingsSlice'
 import groupReducer from './slices/groupSlice'
 import aiInsightReducer from './slices/aiInsightSlice'
 
@@ -16,6 +17,7 @@ export const store = configureStore({
     balance: balanceReducer,
     calendar: calendarReducer,
     installments: installmentReducer,
+    savings: savingsReducer,
     groups: groupReducer,
     aiInsight: aiInsightReducer,
   },
