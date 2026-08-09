@@ -3,6 +3,7 @@ import { useAppDispatch, useAppSelector } from '@/store/hooks'
 import { fetchCategories } from '@/store/slices/categorySlice'
 import { createInstallment } from '@/store/slices/installmentSlice'
 import { toISODate, formatIDR, cn } from '@/lib/utils'
+import CurrencyInput from '@/components/shared/CurrencyInput'
 
 export default function InstallmentForm({ open, onClose }) {
   const dispatch = useAppDispatch()
@@ -149,16 +150,11 @@ export default function InstallmentForm({ open, onClose }) {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-sm font-medium text-text mb-1">Per Bulan (Rp)</label>
-              <input
-                type="number"
+              <CurrencyInput
                 value={formData.monthly_amount}
-                onChange={(e) => setFormData({ ...formData, monthly_amount: e.target.value })}
+                onChange={(digits) => setFormData({ ...formData, monthly_amount: digits })}
                 placeholder="0"
-                min="0"
-                className={cn(
-                  'w-full px-3 py-2.5 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent',
-                  errors.monthly_amount ? 'border-expense' : 'border-gray-300'
-                )}
+                hasError={Boolean(errors.monthly_amount)}
               />
               {errors.monthly_amount && <p className="mt-1 text-xs text-expense">{errors.monthly_amount}</p>}
             </div>
