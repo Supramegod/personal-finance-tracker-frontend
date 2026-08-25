@@ -5,6 +5,7 @@ import {
   fetchAIConsent,
   fetchLatestAIInsight,
   fetchMonthlyAIInsight,
+  regenerateAIInsight,
   updateAIConsent,
 } from '@/store/slices/aiInsightSlice'
 import { cn, formatIDR } from '@/lib/utils'
@@ -69,6 +70,18 @@ export default function AIInsightPanel({ compact = false, month, onMonthChange }
     }, 5000)
     return () => window.clearInterval(timer)
   }, [compact, dispatch, isTransient, month, shouldPoll])
+
+  const regenerate = async () => {
+    if (!month) return
+    try {
+      await dispatch(regenerateAIInsight(month)).unwrap()
+      // Server sudah menurunkan status baris menjadi 'pending', jadi fetch
+      // berikutnya menyalakan polling yang sudah ada sampai selesai.
+      dispatch(fetchMonthlyAIInsight(month))
+    } catch {
+      // Pesan dari slice ditampilkan di bawah tombol.
+    }
+  }
 
   const setConsent = async (enabled) => {
     setConfirmMode(null)
@@ -137,8 +150,18 @@ export default function AIInsightPanel({ compact = false, month, onMonthChange }
       {!compact && month && <MonthPicker month={month} onChange={onMonthChange} />}
       {content}
       {!compact && state.consent?.can_manage && (
-        <div className="text-center">
-          <button onClick={() => setConfirmMode('disable')} className="text-xs font-medium text-gray-400 hover:text-expense">Nonaktifkan Insight AI</button>
+        <div className="space-y-2 text-center">
+          <div className="flex items-center justify-center gap-3">
+            <button
+              onClick={regenerate}
+              disabled={state.regenerateStatus === 'loading' || isTransient}
+              className="rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-semibold text-gray-600 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              {state.regenerateStatus === 'loading' || isTransient ? 'Membuat ulang…' : 'Buat ulang analisis'}
+            </button>
+            <button onClick={() => setConfirmMode('disable')} className="text-xs font-medium text-gray-400 hover:text-expense">Nonaktifkan Insight AI</button>
+          </div>
+          {state.regenerateStatus === 'failed' && <p className="text-xs text-expense">{state.error}</p>}
         </div>
       )}
       {confirmMode && <ConsentDialog mode={confirmMode} onCancel={() => setConfirmMode(null)} onConfirm={setConsent} />}

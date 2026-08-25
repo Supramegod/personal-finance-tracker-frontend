@@ -54,6 +54,18 @@ export const fetchMonthlyAIInsight = createAsyncThunk(
   }
 )
 
+export const regenerateAIInsight = createAsyncThunk(
+  'aiInsight/regenerate',
+  async (month, { rejectWithValue }) => {
+    try {
+      const response = await api.post('/summary/ai-insights/regenerate', null, { params: { month } })
+      return response.data
+    } catch (error) {
+      return rejectWithValue(apiError(error, 'Gagal membuat ulang analisis'))
+    }
+  }
+)
+
 const initialState = {
   consent: null,
   consentStatus: 'idle',
@@ -61,6 +73,7 @@ const initialState = {
   latestStatus: 'idle',
   monthly: null,
   monthlyStatus: 'idle',
+  regenerateStatus: 'idle',
   error: null,
 }
 
@@ -122,6 +135,20 @@ const aiInsightSlice = createSlice({
       .addCase(fetchMonthlyAIInsight.fulfilled, (state, action) => {
         state.monthlyStatus = 'succeeded'
         state.monthly = action.payload
+      })
+      .addCase(regenerateAIInsight.pending, (state) => {
+        state.regenerateStatus = 'loading'
+        state.error = null
+      })
+      // Backend membalas 202 dan bekerja di latar. State insight sengaja TIDAK
+      // ditambal di sini, mengikuti pola slice lain: komponen memanggil ulang
+      // thunk fetch, dan status 'pending' dari server yang menyalakan polling.
+      .addCase(regenerateAIInsight.fulfilled, (state) => {
+        state.regenerateStatus = 'succeeded'
+      })
+      .addCase(regenerateAIInsight.rejected, (state, action) => {
+        state.regenerateStatus = 'failed'
+        state.error = action.payload
       })
       .addCase(fetchMonthlyAIInsight.rejected, (state, action) => {
         state.monthlyStatus = 'failed'
